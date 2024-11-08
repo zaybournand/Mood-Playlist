@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood-Based Music Recommender</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            background-color: #f5f5dc; /* Beige background */
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+        h1 {
+            font-size: 3em;
+            margin-top: 20px;
+        }
+        .question { 
+            margin: 20px; 
+            font-size: 2em; 
+        }
+        .btn {
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+        #result { 
+            font-size: 2em; 
+            margin-top: 30px; 
+        }
+        .mood-song { 
+            margin-top: 30px; 
+            font-size: 1.8em; 
+        }
+        .mood-image {
+            width: 350px;
+            height: 350px;
+            margin: 20px;
+            cursor: pointer;
+        }
+        .control-buttons {
+            margin-top: 20px;
+        }
+        .mood-btn {
+            display: inline-block;
+        }
+        /* Color coding for mood buttons */
+        .happy { background-color: #ffcc00; }
+        .relaxed { background-color: #8cc5a1; color: rgb(18, 0, 139); }
+        .energetic { background-color: #f44242; color: rgb(22, 32, 2); }
+        .sad { background-color: #0865d6; color: rgb(250, 250, 250); }
+        /* Styling for previous and reset buttons */
+        .previous-btn, .reset-btn {
+            background-color: #4a4a4a;
+            color: white;
+            border: none;
+            font-size: 1.3em;
+            padding: 15px 30px;
+            cursor: pointer;
+        }
+        /* Position control buttons correctly */
+        .previous-btn {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+        }
+        .reset-btn {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+        }
+        /* Style for the 'CLICK' text */
+        .click-text {
+            font-size: 2em;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mood-Based Music Recommender</h1>
+    <div id="quiz-container">
+        <div class="question" id="question-text"></div>
+        <div id="answer-buttons"></div>
+    </div>
+    <div id="result"></div>
+    <div class="mood-song">
+        <p>Suggested Songs:</p>
+        <div id="playlist-link"></div>
+    </div>
+
+    <!-- Control Buttons -->
+    <div class="control-buttons">
+        <button id="previous-btn" class="previous-btn" onclick="goBack()" disabled>Previous</button>
+        <button id="reset-btn" class="reset-btn" onclick="resetQuiz()">Reset</button>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: "How are you feeling today?",
+                answers: [
+                    { text: "Happy", mood: "happy" },
+                    { text: "Relaxed", mood: "relaxed" },
+                    { text: "Energetic", mood: "energetic" },
+                    { text: "Sad", mood: "sad" }
+                ]
+            },
+            {
+                question: "What type of activity do you feel like doing?",
+                answers: [
+                    { text: "Dancing", mood: "energetic" },
+                    { text: "Reading", mood: "relaxed" },
+                    { text: "Reflecting", mood: "sad" },
+                    { text: "Having fun with friends", mood: "happy" }
+                ]
+            },
+            {
+                question: "Which scenery resonates with you the most?",
+                answers: [
+                    { text: "Sunny beach", mood: "happy" },
+                    { text: "Mountain peak", mood: "energetic" },
+                    { text: "Quiet forest", mood: "relaxed" },
+                    { text: "Rainy day", mood: "sad" }
+                ]
+            }
+        ];
+
+        let selectedMoods = [];
+        let currentQuestionIndex = 0;
+
+        function startQuiz() {
+            showQuestion(questions[currentQuestionIndex]);
+        }
+
+        function showQuestion(question) {
+            const questionText = document.getElementById("question-text");
+            const answerButtons = document.getElementById("answer-buttons");
+
+            questionText.innerText = question.question;
+            answerButtons.innerHTML = '';
+
+            question.answers.forEach(answer => {
+                const button = document.createElement("button");
+                button.innerText = answer.text;
+                button.classList.add("btn", answer.mood);
+                button.onclick = () => selectAnswer(answer.mood);
+                answerButtons.appendChild(button);
+            });
+
+            updateControlButtons();
+        }
+
+        function selectAnswer(mood) {
+            selectedMoods.push(mood);
+            currentQuestionIndex++;
+
+            if (currentQuestionIndex < questions.length) {
+                showQuestion(questions[currentQuestionIndex]);
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            const resultDiv = document.getElementById("result");
+            const moodCount = {};
+
+            // Count occurrences of each mood in the selectedMoods array
+            selectedMoods.forEach(mood => {
+                moodCount[mood] = (moodCount[mood] || 0) + 1;
+            });
+
+            // Find the mood with the highest count
+            const maxMood = Object.keys(moodCount).reduce((a, b) => moodCount[a] > moodCount[b] ? a : b);
+            
+            resultDiv.innerText = `Your mood seems to be: ${maxMood.charAt(0).toUpperCase() + maxMood.slice(1)}!`;
+
+            // Map moods to Spotify playlists
+            const playlistLinks = {
+                happy: 'https://open.spotify.com/playlist/0tPNEuXuJ3JGoeOfppeSc8',
+                relaxed: 'https://open.spotify.com/genre/0JQ5DAqbMKFKDIyhfS9NTT',
+                energetic: 'https://open.spotify.com/playlist/0eXxqedDSEHxA5tf5pjT8w',
+                sad: 'https://open.spotify.com/playlist/37i9dQZF1EIdChYeHNDfK5'
+            };
+
+            // Map moods to image file names
+            const moodImages = {
+                happy: 'happy.jpeg',
+                relaxed: 'relax.jpeg',
+                energetic: 'hype.jpeg',
+                sad: 'sad.jpg'
+            };
+
+            // Display the clickable image for the playlist
+            const playlistLinkDiv = document.getElementById("playlist-link");
+            playlistLinkDiv.innerHTML = `
+                <a href="${playlistLinks[maxMood]}" target="_blank">
+                    <img src="${moodImages[maxMood]}" alt="${maxMood} playlist" class="mood-image">
+                    <p class="click-text">CLICK</p>
+                </a>
+            `;
+        }
+
+        function goBack() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                showQuestion(questions[currentQuestionIndex]);
+            }
+        }
+
+        function resetQuiz() {
+            selectedMoods = [];
+            currentQuestionIndex = 0;
+            showQuestion(questions[currentQuestionIndex]);
+            document.getElementById("result").innerText = "";
+            document.getElementById("playlist-link").innerHTML = "";
+            updateControlButtons();
+        }
+
+        function updateControlButtons() {
+            const previousBtn = document.getElementById("previous-btn");
+            const resetBtn = document.getElementById("reset-btn");
+
+            // Disable 'Previous' button on the first question
+            previousBtn.disabled = currentQuestionIndex === 0;
+
+            // Change reset button text to "Restart Quiz" after quiz completion
+            if (currentQuestionIndex === questions.length) {
+                resetBtn.innerText = "Restart Quiz";
+            } else {
+                resetBtn.innerText = "Reset";
+            }
+        }
+
+        startQuiz();
+    </script>
+</body>
+</html>
